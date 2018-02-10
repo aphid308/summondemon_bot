@@ -6,6 +6,8 @@ import pickle
 import re
 import tweepy
 import os
+from configparser import ConfigParser
+
 
 #if pickle file does not exist, create the last tweet variable
 #if it does, load the variable from the pickle file
@@ -23,10 +25,12 @@ else:
 
 #setup twitter credentials
 #move to config file before production
-twitter_key = os.environ['KEY']
-twitter_secret = os.environ["SECRET"]
-twitter_token_key = os.environ["TOKEN_KEY"]
-twitter_token_secret = os.environ["TOKEN_SECRET"]
+config = ConfigParser()
+config.read('twitter.ini')
+twitter_key = config.get('api_settings', 'key')
+twitter_secret = config.get('api_settings', 'secret')
+twitter_token_key = config.get('api_settings', 'token_key')
+twitter_token_secret = config.get('api_settings', 'token_secret')
 
 #instantiate twitter api object
 twitter_auth = tweepy.OAuthHandler(twitter_key, twitter_secret)
