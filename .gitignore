@@ -103,6 +103,7 @@ venv.bak/
 
 *.p
 praw.ini
+summon.log
 twitter.ini
 
 # End of https://www.gitignore.io/api/python
