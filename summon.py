@@ -41,6 +41,8 @@ def summon():
                 image_url = tweet.entities['media'][0]['media_url']
                 ascii_tweet = tweet.text.encode("ascii", "ignore")
                 ascii_tweet = re.sub(r"http\S+", "", ascii_tweet)
+                #TODO This formatting sometimes throws an index error
+                #TODO Investigate cases where the index 3 is not present
                 name = "{0} {1}".format(ascii_tweet.split(' ')[2],
                                         ascii_tweet.split(' ')[3].replace(',', ''))
                 attributes = [x.strip() for x in ascii_tweet.split("\n")[1::]]
@@ -83,7 +85,7 @@ def save_persistent(replied_comments, last_tweet):
 def main():
 
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                       level=logging.DEBUG,
+                       level=logging.INFO,
                        filename='summon.log',)
     try:
         summon()
