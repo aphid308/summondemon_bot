@@ -9,11 +9,6 @@ from configparser import ConfigParser
 import logging
 from datetime import datetime
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                   level=logging.DEBUG,
-                   filename='summon.log',)
-
-
 def summon():
     config = ConfigParser()
     config.read('twitter.ini')
@@ -84,7 +79,12 @@ def save_persistent(replied_comments, last_tweet):
     pickle.dump(last_tweet, open("last_tweet.p", "wb"))
     pickle.dump(replied_comments, open("replied_comments.p", "wb"))
 
+
 def main():
+
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                       level=logging.DEBUG,
+                       filename='summon.log',)
     try:
         summon()
     except KeyboardInterrupt:
