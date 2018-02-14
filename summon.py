@@ -9,7 +9,13 @@ from configparser import ConfigParser
 import logging
 
 
-def load_persistent(pickle_file):
+def load_replied_comments(pickle_file):
+    """
+    loads the ids of reddit comments that
+    have already been replied to from
+    a pickle file specified. If the file specified does not
+    exist it is created.
+    """
     if not os.path.isfile(pickle_file):
         replied_comments = []
     else:
@@ -18,6 +24,12 @@ def load_persistent(pickle_file):
     return replied_comments
 
 def load_last_tweet(pickle_file):
+    """
+    loads the id of the last tweet used so that
+    the id can be used as the max id for the next
+    pull of tweets. if pickle file does not exist
+    it is created.
+    """
     if not os.path.isfile(pickle_file):
         last_tweet = ""
     else:
@@ -25,6 +37,11 @@ def load_last_tweet(pickle_file):
     return last_tweet
 
 def get_tweet():
+    """
+    creates the twitter api objects
+    loads the timeline starting at id after last tweet
+    skips retweets
+    """
     config = ConfigParser()
     config.read('twitter.ini')
 
@@ -52,6 +69,10 @@ def get_tweet():
             pass
 
 def parse_tweet(tweet):
+    """
+    takes a single tweet and parses the needed data
+    into a reply string
+    """
     image_url = tweet.entities['media'][0]['media_url']
     ascii_tweet = tweet.text.encode("ascii", "ignore")
     ascii_tweet = re.sub(r"http\S+", "", ascii_tweet)
@@ -61,17 +82,21 @@ def parse_tweet(tweet):
     attributes = ", ".join(attributes)
 
     reply_str = "You have summoned [{0}]({1}) Demon of: {2}"
-    logging.info("reply parsed: {0}".format(reply_str))
+    logging.info("reply parsed: {0}".format(reply_str.format(name, image_url, attributes)))
     reply = reply_str.format(name, image_url, attributes)
     return reply
 
 
 def summon():
-
+    """
+    scrapes for comments not replied to yet
+    and replies with a demon object
+    saves the replied to comment ids
+    """
     reddit = praw.Reddit('bot1')
     subreddit = reddit.subreddit("test")
     tweets = get_tweet()
-    replied_comments = load_persistent('replied_comments.p')
+    replied_comments = load_replied_comments('replied_comments.p')
 
     for comment in subreddit.stream.comments():
         search = re.search("/u/summondemon", comment.body, re.IGNORECASE)
