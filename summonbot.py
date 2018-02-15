@@ -7,6 +7,10 @@ import tweepy
 import logging
 from configparser import ConfigParser
 
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                                 level=logging.INFO,
+                                 filename='summon.log')
+
 
 class SummonBot(object):
     def __init__(self, config_file, ini_module):
@@ -31,6 +35,8 @@ class SummonBot(object):
             self.replied_comments = []
         else:
             self.replied_comments = pickle.load(open(self.replied_file, 'rb'))
+        message = 'Loaded comments previously replied to'
+        logging.info(message)
         return self.replied_comments
 
     def load_last_tweet(self):
@@ -39,6 +45,8 @@ class SummonBot(object):
             self.last_tweet = ""
         else:
             self.last_tweet = pickle.load(open(pickle_file, 'rb'))
+        message = 'Loaded last tweet id'
+        logging.info(message)
         return self.last_tweet
 
     def tweets(self):
@@ -54,9 +62,13 @@ class SummonBot(object):
             timeline = timeline[1::]
         else:
             timeline = api.user_timeline(user.id)
+        message_a = 'Loaded user timeline'
+        message_b = 'Generated single tweet'
+        logging.info(message_a)
         for self.tweet in timeline:
             if "RT" not in self.tweet.text:
                 yield self.tweet
+                logging.info(message_b)
             else:
                 pass
 
@@ -71,7 +83,26 @@ class SummonBot(object):
 
         reply_str = "You have summoned [{0}]({1}) Demon of: {2}"
         self.reply = reply_str.format(name, image_url, attributes)
+        logging.info(self.reply)
         return self.reply
+
+    def reply_post(self, comment, tweets):
+        if tweets:
+            tweet = next(tweets)
+        else:
+            tweets = self.tweets()
+            tweet = next(tweets)
+        reply = self.parse_tweet(tweet)
+        comment.reply(reply)
+        last_tweet = tweet.id
+        self.replied_comments.append(comment.id)
+        last_tweet_file = self.config_dict.get('last_tweet_file')
+        replied_file = self.config_dict.get('replied_file')
+        pickle.dump(last_tweet, open(last_tweet_file, 'wb'))
+        pickle.dump(self.replied_comments, open(replied_file, 'wb'))
+        logging.info('Comment replied')
+
+
 
     def summon(self):
         reddit = praw.Reddit(self.config_dict.get('praw_config'))
@@ -80,17 +111,20 @@ class SummonBot(object):
         replied_comments = self.load_replied_comments()
 
         for comment in subreddit.stream.comments():
+            logging.info('Checking comment: {0}'.format(comment.id))
             search = re.search(self.config_dict.get('search_str'),
                                comment.body,
                                re.IGNORECASE)
             if comment.id not in replied_comments and search:
-                tweet = next(tweets)
-                reply = self.parse_tweet(tweet)
-                comment.reply(reply)
-                last_tweet = tweet.id
-                replied_comments.append(comment.id)
-                pickle.dump(last_tweet, open(self.config_dict.get('last_tweet_file')), 'wb')
-                pickle.dump(replied_comments, open(self.config_dict.get('replied_file')), 'wb')
+                logging.info('Replying to comment: {0}'.format(comment.id))
+                self.reply_post(comment, tweets)
+                #tweet = next(tweets)
+                #reply = self.parse_tweet(tweet)
+                #comment.reply(reply)
+                #last_tweet = tweet.id
+                #replied_comments.append(comment.id)
+                #pickle.dump(last_tweet, open(self.config_dict.get('last_tweet_file')), 'wb')
+                #pickle.dump(replied_comments, open(self.config_dict.get('replied_file')), 'wb')
             else:
                 pass
 
