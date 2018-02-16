@@ -7,13 +7,17 @@ import tweepy
 import logging
 from configparser import ConfigParser
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                                 level=logging.INFO,
-                                 filename='summon.log')
-
 
 class SummonBot(object):
+
     def __init__(self, config_file, ini_module):
+        self.logger = logging.getLogger('summon_bot')
+        self.logger.setLevel(logging.INFO)
+        self.summon_log = logging.FileHandler('summon.log')
+        self.summon_log.setLevel(logging.INFO)
+        self.formatter = logging.Formatter('%(asctime)-12s: %(levelname)-8s %(message)s')
+        self.summon_log.setFormatter(self.formatter)
+        self.logger.addHandler(self.summon_log)
         self.config_file = config_file
         self.config = ConfigParser()
         self.config.read(config_file)
@@ -29,6 +33,7 @@ class SummonBot(object):
             'subreddit': self.config.get(self.ini_module, 'subreddit'),
             'search_str': self.config.get(self.ini_module, 'search_str'),}
 
+
     def load_replied_comments(self):
         self.replied_file = self.config_dict.get('replied_file')
         if not os.path.isfile(self.replied_file):
@@ -39,6 +44,7 @@ class SummonBot(object):
         logging.info(message)
         return self.replied_comments
 
+
     def load_last_tweet(self):
         pickle_file = self.config_dict.get('last_tweet_file')
         if not os.path.isfile(pickle_file):
@@ -48,6 +54,7 @@ class SummonBot(object):
         message = 'Loaded last tweet id'
         logging.info(message)
         return self.last_tweet
+
 
     def tweets(self):
         auth = tweepy.OAuthHandler(self.config_dict.get('consumer_key'),
@@ -72,6 +79,7 @@ class SummonBot(object):
             else:
                 pass
 
+
     def parse_tweet(self, tweet):
         image_url = tweet.entities['media'][0]['media_url']
         ascii_tweet = tweet.text.encode('ascii', 'ignore')
@@ -85,6 +93,7 @@ class SummonBot(object):
         self.reply = reply_str.format(name, image_url, attributes)
         logging.info(self.reply)
         return self.reply
+
 
     def reply_post(self, comment, tweets):
         if tweets:
@@ -103,7 +112,6 @@ class SummonBot(object):
         logging.info('Comment replied')
 
 
-
     def summon(self):
         reddit = praw.Reddit(self.config_dict.get('praw_config'))
         subreddit = reddit.subreddit(self.config_dict.get('subreddit'))
@@ -118,24 +126,19 @@ class SummonBot(object):
             if comment.id not in replied_comments and search:
                 logging.info('Replying to comment: {0}'.format(comment.id))
                 self.reply_post(comment, tweets)
-                #tweet = next(tweets)
-                #reply = self.parse_tweet(tweet)
-                #comment.reply(reply)
-                #last_tweet = tweet.id
-                #replied_comments.append(comment.id)
-                #pickle.dump(last_tweet, open(self.config_dict.get('last_tweet_file')), 'wb')
-                #pickle.dump(replied_comments, open(self.config_dict.get('replied_file')), 'wb')
             else:
                 pass
 
 
 def main():
+
     necromancer = SummonBot('bot.ini', 'api_settings')
+
     try:
         necromancer.summon()
+
     except KeyboardInterrupt:
         print('Bot has been shutdown')
 
 if __name__ == '__main__':
     main()
-
